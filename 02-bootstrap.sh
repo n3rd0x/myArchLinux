@@ -1,9 +1,33 @@
 #!/bin/bash
-read -p "Initialise the bootstrap process? Enter (y) to process: " ans
+. 00-vars.sh
+
+
+# ========================================
+# Bootstrap
+# ========================================
+PrintInfo "Initialise the bootstrap process?"
+Prompt
 if [ "${ans}" = "y" ]; then
-	pacstrap /mnt base base-devel linux-firmware linux-lts linux-lts-headers vim bash-completion
-	
-	genfstab -U /mnt >> /mnt/etc/fstab
+    # CPU type.
+    ucode="intel-ucode"
+    PrintInfo "Please enter your CPU chipset:"
+    PrintInfo "  (1) Intel (intel-ucode) => Default"
+    PrintInfo "  (2) Amd (amd-ucode)"
+    read -p "Enter code: " ans
+    if [ "${ans}" = "2" ]; then
+        ucode="amd-ucode"
+    fi
+
+    pacstrap /mnt base base-devel linux-firmware linux-lts linux-lts-headers mkinitcpio ${ucode} bash-completion btrfs-progs curl git ntfs-3g tar unrar unzip vim wget zip
+
+    PrintInfo "Update fstab."
+    genfstab -U /mnt > /mnt/etc/fstab
 fi
 
+
+PrintInfo "Git repo: https://github.com/n3rd0x/myArchyourArch.git"
+PrintInfo "Change directory into /root"
+PrintInfo "Run git clone https://github.com/n3rd0x/myArchyourArch.git"
+
+PrintInfo "Change root."
 arch-chroot /mnt

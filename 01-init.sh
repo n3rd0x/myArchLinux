@@ -1,119 +1,160 @@
 #!/bin/bash
-
-trap Cancel INT
-
-function Cancel() {
-	echo "== Process Interupted =="
-	exit 0
-}
-
-
 . 00-vars.sh
 
+
+# ========================================
+# Keyboard, Network & Timezone
+# ========================================
+# Keyboard layout.
+PrintInfo "Load Norwegian keyboard layout."
 loadkeys no
 
-read -p "Enter your Wifi SSID: " ans
+
+# WIFI
+read -p "Enter your Wifi SSID to connect, otherwise press ENTER to skip: " ans
 if [ ! "${ans}" = "" ]; then
     iwctl station wlan0 connect ${ans}
     sleep 1
     iwctl station wlan0 show
 fi
 
+
+# Time zone.
+PrintInfo "Set time zone to Oslo."
 timedatectl set-ntp true
 timedatectl set-timezone Europe/Oslo
 
-read -p "Open disk partitioning? Enter (y) to accept: " ans
+
+
+# ========================================
+# Format & Encrypt
+# ========================================
+PrintInfo "Open disk partition?"
+Prompt
 if [ "${ans}" = "y" ]; then
-	fdisk /dev/nvme0n1
+    fdisk ${sddisk}
 fi
 
 
-read -p "Encrypt and format the disk? Enter (y) to accept: " ans
+PrintInfo "Encrypt and format the disk?"
+Prompt
 if [ "${ans}" = "y" ]; then
-	echo "Format Boot partition."
-	mkfs.vfat -F32 ${sdboot}
+    PrintInfo "Format Boot partition."
+    mkfs.vfat -F32 ${sdboot}
 
-	echo "Encrypt Data partition."
-	cryptsetup -v luksFormat ${sddata}
+    PrintInfo "Encrypt Data partition."
+    cryptsetup -v luksFormat ${sddata}
 
-	echo "Encrypt Swap partition."
-	cryptsetup -v luksFormat ${sdswap}
+    PrintInfo "Encrypt Swap partition."
+    cryptsetup -v luksFormat ${sdswap}
 
-	echo "Encrypt Root parition."
-	cryptsetup -v luksFormat ${sdroot}
-
-
-	echo "Decrypt Data partition."
-	cryptsetup -v luksOpen ${sddata} ${rddata}
-
-	echo "Decrypt Swap partition."
-	cryptsetup -v luksOpen ${sdswap} ${rdswap}
-
-	echo "Decrypt Root partition."
-	cryptsetup -v luksOpen ${sdroot} ${rdroot}
+    PrintInfo "Encrypt Root parition."
+    cryptsetup -v luksFormat ${sdroot}
 
 
-	echo "Format Data partition (ext4)."
-	mkfs.ext4 ${dmdata}
+    PrintInfo "Decrypt Data partition."
+    cryptsetup -v luksOpen ${sddata} ${rddata}
 
-	echo "Format Swap partition (swap)."
-	mkswap ${dmswap}
+    PrintInfo "Decrypt Swap partition."
+    cryptsetup -v luksOpen ${sdswap} ${rdswap}
 
-	echo "Format Root partition (btrfs)."
-	mkfs.btrfs ${dmroot}
+    PrintInfo "Decrypt Root partition."
+    cryptsetup -v luksOpen ${sdroot} ${rdroot}
 
 
-	echo "Create BTRFS subvolumes."
-	mount ${dmroot} /mnt
-	btrfs subvolume create /mnt/@
-	btrfs sub cr /mnt/@home
-	btrfs sub cr /mnt/@log
-	btrfs sub cr /mnt/@pkg
-	btrfs sub cr /mnt/@tmp
-	btrfs sub cr /mnt/@snapshots
+    PrintInfo "Format Data partition (ext4)."
+    mkfs.ext4 ${dmdata}
 
-	umount /mnt
+    PrintInfo "Format Swap partition (swap)."
+    mkswap ${dmswap}
+
+    PrintInfo "Format Root partition (btrfs)."
+    mkfs.btrfs ${dmroot}
+
+
+    PrintInfo "Create BTRFS subvolumes."
+    mount ${dmroot} /mnt
+    btrfs subvolume create /mnt/@
+    btrfs sub cr /mnt/@home
+    btrfs sub cr /mnt/@vms
+    btrfs sub cr /mnt/@snapshots
+
+    mkdir -v -p /mnt/@{/var,/var/cache/pacman}
+    btrfs sub cr /mnt/@/srv
+    btrfs sub cr /mnt/@/var/cache/pacman/pkg
+    btrfs sub cr /mnt/@/var/log
+    btrfs sub cr /mnt/@/var/tmp
+
+    umount /mnt
 fi
 
 
-echo "Mount partitions...."
-opts=noatime,nodiratime,ssd,space_cache=v2,compress=zstd
+
+# ========================================
+# Mount Partitions
+# ========================================
+PrintInfo "Mount partitions...."
+
+# Root.
 if [ ! -b "${dmroot}" ]; then
-	echo "Mounting Root: ${sdroot} as ${rdroot}."
-	cryptsetup -v luksOpen ${sdroot} ${rdroot}
-	mount -v -o ${opts},subvol=@ ${dmroot} /mnt
+    # Mount options.
+    opts=noatime,nodiratime,ssd,space_cache=v2,compress=zstd
+
+    PrintInfo "Decrypt 'root': ${sdroot} as ${rdroot}."
+    cryptsetup -v luksOpen ${sdroot} ${rdroot}
+    mount -v -o ${opts},subvol=@ ${dmroot} /mnt
 
 
-	if [ ! -d "/mnt/boot" ]; then
-		mkdir -v /mnt/boot
-	fi
+    if [ ! -d "/mnt/boot" ]; then
+        mkdir -v /mnt/boot
+    fi
 
 
-	if [ ! -d "/mnt/home" ]; then
-		mkdir -v /mnt/home
-	fi
-	mount -v -o ${opts},subvol=@home ${dmroot} /mnt/home
+    if [ ! -d "/mnt/home" ]; then
+        mkdir -v /mnt/home
+    fi
+    mount -v -o ${opts},subvol=@home ${dmroot} /mnt/home
 
 
-	if [ ! -d "/mnt/var/log" ]; then
-		mkdir -v -p /mnt/var/log
-	fi
-	mount -v -o ${opts},subvol=@log ${dmroot} /mnt/var/log
+    if [ ! -d "/mnt/vms" ]; then
+        mkdir -v /mnt/vms
+    fi
+    mount -v -o ${opts},subvol=@vms ${dmroot} /mnt/vms
 
 
-	if [ ! -d "/mnt/var/cache/pacman/pkg" ]; then
-		mkdir -v -p /mnt/var/cache/pacman/pkg
-	fi
-	mount -v -o ${opts},subvol=@pkg ${dmroot} /mnt/var/cache/pacman/pkg
+    #if [ ! -d "/mnt/var/log" ]; then
+    #    mkdir -v -p /mnt/var/log
+    #fi
+    #mount -v -o ${opts},subvol=@log ${dmroot} /mnt/var/log
 
 
-	if [ ! -d "/mnt/.snapshots" ]; then
-		mkdir -v /mnt/.snapshots
-	fi
-	mount -v -o ${opts},subvol=@snapshots ${dmroot} /mnt/.snapshots
+    #if [ ! -d "/mnt/var/tmp" ]; then
+    #    mkdir -v -p /mnt/var/tmp
+    #fi
+    #mount -v -o ${opts},subvol=@tmp ${dmroot} /mnt/var/tmp
+
+
+    #if [ ! -d "/mnt/var/cache/pacman/pkg" ]; then
+    #    mkdir -v -p /mnt/var/cache/pacman/pkg
+    #fi
+    #mount -v -o ${opts},subvol=@pkg ${dmroot} /mnt/var/cache/pacman/pkg
+
+
+    if [ ! -d "/mnt/.snapshots" ]; then
+        mkdir -v /mnt/.snapshots
+    fi
+    mount -v -o ${opts},subvol=@snapshots ${dmroot} /mnt/.snapshots
 fi
 
+
+# Swap.
+if [ ! -b "${dmswap}" ]; then
+    PrintInfo "Decrypt 'swap': ${sdswap} as ${rdswap}."
+    cryptsetup -v luksOpen ${sdswap} ${rdswap}
+fi
+
+
+# Boot.
 if [ ! -d "/mnt/boot/efi" ]; then
-	echo "Mount Boot: ${sdboot} into /mnt/boot."
-	mount -v -o noatime,nodiratime ${sdboot} /mnt/boot
+    mount -v -o noatime,nodiratime ${sdboot} /mnt/boot
 fi
