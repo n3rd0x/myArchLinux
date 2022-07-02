@@ -177,7 +177,7 @@ if [ ! -f ${fname} ]; then
         echo "initrd /intel-ucode.img" >> ${fname}
     fi
 
-    echo "initrd /initramfs-lts.img" >> ${fname}
+    echo "initrd /initramfs-linux-lts.img" >> ${fname}
     echo "options root=${dmroot} rootflags=subvol=@ rw" >> ${fname}
 
     # Alternative usage.
@@ -191,7 +191,7 @@ if [ ! -f ${fname} ]; then
     cp /boot/loader/entries/arch-lts.conf ${fname}
 
     sed -i 's/Arch Linux (LTS)/Arch Linux (LTS) - Fallback/g' ${fname}
-    sed -i 's/initramfs-lts.img/initramfs-lts-fallback.img/g' ${fname}
+    sed -i 's/initramfs-linux-lts.img/initramfs-linux-lts-fallback.img/g' ${fname}
 fi
 
 
