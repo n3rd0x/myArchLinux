@@ -104,13 +104,17 @@ if grep -q "MODULES=()" ${fname}; then
     sed -i 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems)/g' ${fname}
 
     mkinitcpio -P
+fi
 
+
+# Bootloader.
+fname="/boot/EFI"
+if [ ! -d ${fname} ]; then
     PrintInfo "Install boot EFI."
     bootctl install
 fi
 
 
-# Bootloader.
 fname="/boot/loader/loader.conf"
 if ! grep -q "default" ${fname}; then
     PrintInfo "Update loader.conf"
