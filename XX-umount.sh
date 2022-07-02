@@ -17,8 +17,7 @@ fi
 # Root.
 if [ -b "${dmroot}" ]; then
     umount -v /mnt/home
-    umount -v /mnt/var/log
-    umount -v /mnt/var/cache/pacman/pkg
+    umount -v /mnt/vms
     umount -v /mnt/.snapshots
     umount -v /mnt
     cryptsetup -v luksClose ${rdroot}
@@ -31,4 +30,6 @@ if [ -b "${dmswap}" ]; then
 fi
 
 
-
+PrintSuccess "========================"
+PrintSuccess "* Umount Completed ^_^ *"
+PrintSuccess "========================"

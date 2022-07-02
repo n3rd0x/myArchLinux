@@ -18,7 +18,7 @@ if [ "${ans}" = "y" ]; then
         ucode="amd-ucode"
     fi
 
-    pacstrap /mnt base base-devel linux-firmware linux-lts linux-lts-headers mkinitcpio ${ucode} bash-completion btrfs-progs curl git ntfs-3g tar unrar unzip vim wget zip
+    pacstrap /mnt base base-devel linux-firmware linux-lts linux-lts-headers mkinitcpio ${ucode} bash-completion btrfs-progs curl git ntfs-3g tar unrar unzip vim wget sudo zip
 
     PrintInfo "Update fstab."
     genfstab -U /mnt > /mnt/etc/fstab
@@ -29,5 +29,9 @@ PrintInfo "Git repo: https://github.com/n3rd0x/myArchyourArch.git"
 PrintInfo "Change directory into /root"
 PrintInfo "Run git clone https://github.com/n3rd0x/myArchyourArch.git"
 
-PrintInfo "Change root."
+
+PrintSuccess "==========================="
+PrintSuccess "* Bootstrap Completed ^_^ *"
+PrintSuccess "==========================="
+PrintSuccess "Change root into /mnt."
 arch-chroot /mnt

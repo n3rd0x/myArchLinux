@@ -23,6 +23,7 @@ fi
 PrintInfo "Set time zone to Oslo."
 timedatectl set-ntp true
 timedatectl set-timezone Europe/Oslo
+timedatectl status
 
 
 
@@ -98,6 +99,7 @@ PrintInfo "Mount partitions...."
 # Root.
 if [ ! -b "${dmroot}" ]; then
     # Mount options.
+    # Change relatime on all non-boot partitions to noatime (reduces wear if using an SSD).
     opts=noatime,nodiratime,ssd,space_cache=v2,compress=zstd
 
     PrintInfo "Decrypt 'root': ${sdroot} as ${rdroot}."
@@ -156,5 +158,10 @@ fi
 
 # Boot.
 if [ ! -d "/mnt/boot/efi" ]; then
-    mount -v -o noatime,nodiratime ${sdboot} /mnt/boot
+    mount -v ${sdboot} /mnt/boot
 fi
+
+
+PrintSuccess "==============================="
+PrintSuccess "* Initliasation Completed ^_^ *"
+PrintSuccess "==============================="
