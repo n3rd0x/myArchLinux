@@ -100,7 +100,7 @@ PrintInfo "Mount partitions...."
 if [ ! -b "${dmroot}" ]; then
     # Mount options.
     # Change relatime on all non-boot partitions to noatime (reduces wear if using an SSD).
-    opts=noatime,nodiratime,ssd,space_cache=v2,compress=zstd
+    opts=noatime,nodiratime,ssd,discard,space_cache=v2,compress=zstd
 
     PrintInfo "Decrypt 'root': ${sdroot} as ${rdroot}."
     cryptsetup -v luksOpen ${sdroot} ${rdroot}

@@ -99,8 +99,17 @@ fname="/etc/mkinitcpio.conf"
 if grep -q "MODULES=()" ${fname}; then
     PrintInfo "Update mkinitcpio."
 
+    # Backup file.
     cp ${fname} ${fname}_origin
-    sed -i 's/MODULES=()/MODULES=(btrfs vmd)/g' ${fname}
+
+    # Ucode.
+    ucodeIntel=$(find /boot -name "*intel*")
+    if [ ! "${ucodeIntel}" = "" ]; then
+        sed -i 's/MODULES=()/MODULES=(btrfs crc32c-intel)/g' ${fname}
+    else
+        sed -i 's/MODULES=()/MODULES=(btrfs)/g' ${fname}
+    fi
+
     sed -i 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems)/g' ${fname}
 
     mkinitcpio -P
@@ -158,7 +167,7 @@ if [ ! -f ${fname}.initramfs ]; then
 
     fname="${fname}.initramfs"
     uuid=$(blkid -o value -s UUID ${sdroot})
-    echo "luksRoot       UUID=${uuid}    none" >> ${fname}
+    echo "luksRoot       UUID=${uuid}    none                    discard" >> ${fname}
 fi
 
 fname="/boot/loader/entries/arch-lts.conf"
@@ -178,11 +187,11 @@ if [ ! -f ${fname} ]; then
     fi
 
     echo "initrd /initramfs-linux-lts.img" >> ${fname}
-    echo "options root=${dmroot} rootflags=subvol=@ rw" >> ${fname}
+    echo "options root=${dmroot} rootflags=subvol=@ nowatchdog rw" >> ${fname}
 
     # Alternative usage.
     #uuid=$(blkid -o value -s UUID ${sdroot})
-    #echo "options rd.luks.name=UUID=${uuid}=luksRoot root=${dmroot} rd.luks.options=UUID=${uuid}=discard rootflags=subvol=@ rw" >> ${fname}
+    #echo "options rd.luks.name=UUID=${uuid}=luksRoot root=${dmroot} rd.luks.options=UUID=${uuid}=discard rootflags=subvol=@ nowatchdog rw" >> ${fname}
 fi
 
 fname="/boot/loader/entries/arch-lts-fallback.conf"
