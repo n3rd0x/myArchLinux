@@ -19,6 +19,8 @@ rdroot="luksRoot"
 dmdata="/dev/mapper/${rddata}"
 dmswap="/dev/mapper/${rdswap}"
 dmroot="/dev/mapper/${rdroot}"
+mtdata="/mnt/data"
+wspace="${HOME}/Workspace"
 
 
 # ========================================

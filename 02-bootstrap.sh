@@ -25,9 +25,9 @@ if [ "${ans}" = "y" ]; then
 fi
 
 
-PrintInfo "Git repo: https://github.com/n3rd0x/myArchyourArch.git"
+PrintInfo "Git repo: https://github.com/n3rd0x/myArchLinux.git"
 PrintInfo "Change directory into /root"
-PrintInfo "Run git clone https://github.com/n3rd0x/myArchyourArch.git"
+PrintInfo "Run git clone https://github.com/n3rd0x/myArchLinux.git"
 
 
 PrintSuccess "==========================="
